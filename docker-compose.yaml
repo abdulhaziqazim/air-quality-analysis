@@ -10,3 +10,19 @@ services:
       POSTGRES_PASSWORD: db_password
     volumes:
     - ./postgres/data:/var/lib/postgresql/data
+
+  af:
+    container_name: airflow_container
+    image: apache/airflow:3.2.1
+    ports:
+      - 8000:8080
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+    depends_on:
+      - db
+
+networks:
+  my-network:
+    driver: bridge
