@@ -1,4 +1,3 @@
-from fetch_data import mock_fetch_data
 import psycopg2
 #print(mock_fetch_data())
 
@@ -6,16 +5,16 @@ def connect_to_db():
     print("Connecting to PostgreSQL database")
     try:
         conn = psycopg2.connect(
-            host = "localhost",
-            port = 5000,
-            dbname = "db",
+            host = "db",
+            port = 5432,
+            dbname = "postgres_db",
             user = "db_user",
             password = "db_password" 
         )
 
         return conn
     except psycopg2.Error as e:
-        print (f"Databse connection failed: {e}")
+        print (f"Database connection failed: {e}")
         raise
 
 def create_table(conn):
@@ -24,7 +23,6 @@ def create_table(conn):
         cursor = conn.cursor()
         cursor.execute("""
             CREATE SCHEMA IF NOT EXISTS dev;
- 
             CREATE TABLE IF NOT EXISTS dev.raw_air_quality_data (
                 id SERIAL PRIMARY KEY,
                 city TEXT,
@@ -58,8 +56,8 @@ def insert_data(conn, data):
             cursor.execute("""
                 INSERT INTO dev.raw_air_quality_data (
                     city,
-                    lat,
                     lon,
+                    lat,
                     aqi,
                     co,
                     no,
@@ -93,20 +91,25 @@ def insert_data(conn, data):
         print(f"Failed to insert data: {e}")
         raise
 
-data = mock_fetch_data()
-conn = connect_to_db()
-create_table(conn)
-insert_data(conn, data)
-
 def main():
+    print("Starting pipeline")
+    from fetch_data import mock_fetch_data
     try:
         data = mock_fetch_data()
         conn = connect_to_db()
         create_table(conn)
+        print("Create table")
         insert_data(conn, data)
+        print("Insert data into tabel")
     except Exception as e:
         print(f"An error occured during execution: {e}")
+        raise
     finally:
         if 'conn' in locals():
             conn.close()
             print("Database connection closed")
+
+# data = mock_fetch_data()
+# conn = connect_to_db()  
+# create_table(conn)
+# insert_data(conn, data)
