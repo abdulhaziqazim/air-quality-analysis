@@ -29,6 +29,8 @@ services:
       - 8000:8080
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+      TZ: UTC
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: UTC
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./request_api:/opt/airflow/request_api
@@ -38,7 +40,7 @@ services:
     networks:
       - my-network
     command: > 
-      bash -c "airflow db migrate && airflow standalone"
+      bash -c "ntpdate pool.ntp.org || true && airflow db migrate && airflow standalone"
 
   superset-init:
     image: apache/superset:3.0.0-py310

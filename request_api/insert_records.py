@@ -21,8 +21,11 @@ def create_table(conn):
     print("Creating table if not exist...")
     try:
         cursor = conn.cursor()
+        
+        cursor.execute("CREATE SCHEMA IF NOT EXISTS dev;")
+        conn.commit()  # commit schema first
+        
         cursor.execute("""
-            CREATE SCHEMA IF NOT EXISTS dev;
             CREATE TABLE IF NOT EXISTS dev.raw_air_quality_data (
                 id SERIAL PRIMARY KEY,
                 city TEXT,
@@ -38,42 +41,29 @@ def create_table(conn):
                 pm10 FLOAT,
                 nh3 FLOAT,
                 time TIMESTAMP,
-                inserted_at TIMESTAMP DEFAULT NOW()
+                inserted_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE (city, time)
             );
         """)
         conn.commit()
         print("Table was created.")
     except psycopg2.Error as e:
         print(f"Failed to create table: {e}")
+        conn.rollback()
         raise
 
 def insert_data(conn, data):
     print("Inserting data...")
     try:
         cursor = conn.cursor()
-        
+
+        records_to_insert = []
+
         for record in data['list']:
-            cursor.execute("""
-                INSERT INTO dev.raw_air_quality_data (
-                    city,
-                    lon,
-                    lat,
-                    aqi,
-                    co,
-                    no,
-                    no2,
-                    o3,
-                    so2,
-                    pm2_5,
-                    pm10,
-                    nh3,
-                    time,
-                    inserted_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TO_TIMESTAMP(%s), NOW())
-            """,(
+            records_to_insert.append((
                 "Kuala Lumpur",
-                data['coord']['lat'],              # latitude
-                data['coord']['lon'],              # longitude
+                data['coord']['lon'],   
+                data['coord']['lat'],   
                 record['main']['aqi'],
                 record['components']['co'],
                 record['components']['no'],
@@ -85,17 +75,29 @@ def insert_data(conn, data):
                 record['components']['nh3'],
                 record['dt']
             ))
+
+        cursor.executemany("""
+            INSERT INTO dev.raw_air_quality_data (
+                city, lon, lat, aqi, co, no, no2, o3, so2,
+                pm2_5, pm10, nh3, time, inserted_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TO_TIMESTAMP(%s), NOW())
+            ON CONFLICT (city, time) DO NOTHING;
+        """, records_to_insert)
+
         conn.commit()
-        print("Data inserted successfully.")
+        print(f"{len(records_to_insert)} records inserted successfully.")
+
     except psycopg2.Error as e:
         print(f"Failed to insert data: {e}")
+        conn.rollback()
         raise
 
 def main():
     print("Starting pipeline")
-    from fetch_data import mock_fetch_data
+    from fetch_data import fetch_data
     try:
-        data = mock_fetch_data()
+        data = fetch_data()
         conn = connect_to_db()
         create_table(conn)
         print("Create table")

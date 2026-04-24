@@ -9,12 +9,11 @@ api_url = f"http://api.openweathermap.org/data/2.5/air_pollution/history?lat={la
 
 def fetch_data():
     print("Get Pollution data from API")
-
     try:
         responses = requests.get(api_url)
-        print(responses.json())
+        data = responses.json()  
         print("Data is successfully taken")
-        return responses.json
+        return data               
     except requests.exceptions.RequestException as e:
         print(f"An error occured: {e}")
         raise
