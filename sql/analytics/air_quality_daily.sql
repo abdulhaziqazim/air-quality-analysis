@@ -15,5 +15,5 @@ SELECT
     MAX(pm2_5) AS peak_pm2_5,
     MAX(pm10) AS peak_pm10
 FROM staging.air_quality_cleaned
-GROUP BY city, day;
+GROUP BY city, day
 ORDER BY city, day;
