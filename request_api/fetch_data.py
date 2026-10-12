@@ -1,6 +1,5 @@
 import requests
 
-API_KEY = "d06d6a6d325e6e2055d25c42ad00ef8e"
 lat = "3.139"
 lon = "101.6841"
 start = "1735689600" # 1 January 2025 00:00:00
